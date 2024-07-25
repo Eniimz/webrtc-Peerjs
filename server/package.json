@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "peerjs": "^1.5.4",
+    "socket.io": "^4.7.5",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "scripts": {
+    "dev": "nodemon index.js",
+    "proxy": "http://localhost:3000"
+  }
+}
