@@ -8,7 +8,7 @@ import Video from '../components/Video';
 function Room() {
 
   let [videoStreams, setVideoStreams] = useState([])
-  let [remoteVideoStream, setRemoteVideoStream] = useState(null)
+  let [newUserData, setNewUserData] = useState(null)
 
   
   let videoTag = useRef(null)
@@ -51,28 +51,24 @@ function Room() {
 
     })
 
-    socket.on("user-disconnected", userId => {
-
-      console.log("The following user disconnected: ", userId)
-
-    })  
+    
 
 
   }, [])
 
   useEffect(() => {
 
-    if(remoteVideoStream){
-      console.log("The data inside videoStream: ", remoteVideoStream.id)
+    if(newUserData){
+      console.log("The data inside videoStream: ", newUserData.remoteVideoStreamm.id)
 
       setVideoStreams((prevStreams) => [
         ...prevStreams,
-        remoteVideoStream
+        newUserData
       ])
     }
 
 
-  }, [remoteVideoStream])
+  }, [newUserData])
 
 
   useEffect(() => {
@@ -88,7 +84,7 @@ function Room() {
 
       console.log("The calling peer ran on receiving remote Stream")
 
-      setRemoteVideoStream(remoteVideoStreamm)
+      setNewUserData({userId, remoteVideoStreamm})
       // setStreamAdded(prevValue => !prevValue)
 
    
@@ -118,8 +114,8 @@ function Room() {
       <video ref={videoTag} autoPlay muted className='local-vid '></video>
 
       {
-        videoStreams[0] && (videoStreams.map((stream) => 
-          <Video stream={stream} />
+        videoStreams[0] && (videoStreams.map((videoData) => 
+          <Video stream={videoData.remoteVideoStreamm} socket = {socket} userIdProp={videoData.userId} setVideoStreams={setVideoStreams}/>
         )
         )
       }
