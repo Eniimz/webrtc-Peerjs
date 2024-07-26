@@ -43,6 +43,9 @@ function Room() {
         call.on('stream', (localVideoStream) => {
 
           console.log("The receiving call peer ran... on getting local stream")
+
+          setNewUserData({userId: call.peer , remoteVideoStreamm: localVideoStream})
+
         })
 
       console.log("The one before peer.on('call').....is running yes")
