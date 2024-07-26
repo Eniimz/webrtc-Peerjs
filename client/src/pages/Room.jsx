@@ -44,7 +44,9 @@ function Room() {
 
           console.log("The receiving call peer ran... on getting local stream")
 
-          setNewUserData({userId: call.peer , remoteVideoStreamm: localVideoStream})
+          setNewUserData({userId: call.metadata.userId , remoteVideoStreamm: localVideoStream})
+
+          console.log("INCOMMING CALL from the user: ", call.metadata.userId)
 
         })
 
@@ -81,7 +83,9 @@ function Room() {
 
   let connectToNewUser = (userId, stream) => {
 
-    const call = peer.call(userId, stream)
+    const call = peer.call(userId, stream, {
+      metadata: { userId: peer.id }
+    })
 
     call.on('stream', remoteVideoStreamm => {
 
