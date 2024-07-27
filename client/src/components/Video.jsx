@@ -35,7 +35,7 @@ function Video({ stream, socket, userIdProp, setVideoStreams }) {
     }, [stream])
 
   return (
-        <video src="" ref={videoRef} autoPlay muted/>
+        <video src="" ref={videoRef} autoPlay muted className='rounded-lg h-[400px]'/>
   )
 }
 

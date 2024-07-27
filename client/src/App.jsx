@@ -9,6 +9,7 @@ import { Peer } from 'peerjs'
 import { populateSocket} from "./redux/socketSlice";
 import { populatePeer, populatePeerId } from "./redux/peerSlice";
 import { useSelector, useDispatch } from 'react-redux';
+import { Button } from "./components/ui/button";
 
 function App() {
 
@@ -77,12 +78,12 @@ function App() {
     <>
       <div className='flex justify-center items-center bg-black h-screen'>
 
-        <div className="flex flex-col gap-9">
+        <div className="flex flex-col gap-5">
           <div className="flex gap-5">
-            <button className="bg-red-600 p-4 rounded-sm" onClick={handleJoin}> Join Room </button>
+            <Button className="bg-red-600 hover:bg-red-500 p-7 rounded-sm font-bold" onClick={handleJoin}> Join Room </Button>
             <input type="text" value={input} onChange={(e) => handleInput(e)}/>
           </div>
-          <button className="bg-blue-500 p-4 rounded-sm" onClick={handleCreate}> Create Room </button>
+          <Button className="bg-blue-500 p-6 rounded-sm hover:bg-blue-400 font-bold" onClick={handleCreate}> Create Room </Button>
         </div>
 
       </div>

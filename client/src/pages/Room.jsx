@@ -116,16 +116,27 @@ function Room() {
   
 
   return (
-    <div className='flex items-center gap-2 flex-wrap bg-slate-500 h-screen' >
+    <div className='flex items-center gap-2 bg-slate-500 h-screen justify-center py-4' >
 
-      <video ref={videoTag} autoPlay muted className='local-vid '></video>
+      <div className='bg-black w-full h-full p-5 flex '>
 
-      {
-        videoStreams[0] && (videoStreams.map((videoData) => 
-          <Video stream={videoData.remoteVideoStreamm} socket = {socket} userIdProp={videoData.userId} setVideoStreams={setVideoStreams}/>
-        )
-        )
-      }
+        <div className='w-full flex flex-wrap gap-5 bg-white p-4'>
+          <video ref={videoTag} autoPlay muted className='local-vid rounded-lg h-[400px]' ></video>
+
+          {
+            videoStreams[0] && (videoStreams.map((videoData) => 
+              <Video stream={videoData.remoteVideoStreamm} socket = {socket} userIdProp={videoData.userId} setVideoStreams={setVideoStreams}/>
+            )
+            )
+          }
+        </div>
+
+      <div className='bg-red-600 w-[600px]'>
+        ds
+      </div>
+
+      </div>
+
 
     </div>
   )
