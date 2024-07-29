@@ -7,17 +7,18 @@ function Video({ stream, socket, userIdProp, setVideoStreams }) {
     useEffect(() => {
         socket.on("user-disconnected", userId => {
 
-            console.log("I ran on user disconnected, outside if")
+            // console.log("I ran on user disconnected, outside if")
 
-            console.log("The user dicsonnected: ", userId);
+            
 
-            console.log("The passes userProp: ", userIdProp)
+            // console.log("The passed userProp: ", userIdProp)
 
             if(userIdProp === userId){
 
                 setVideoStreams((prevStreams) => prevStreams.filter((data) => data.userId !== userId))
 
-                console.log("I ran on user-disconnected (inside if userid == prop)")
+                console.log("The user dicsonnected: ", userId);
+                // console.log("I ran on user-disconnected (inside if userid == prop)")
 
                 // videoRef.current.remove();
                 

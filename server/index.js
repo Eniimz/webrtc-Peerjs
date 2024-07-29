@@ -16,6 +16,7 @@ const io = new Server(server, {
     }
 })
 
+const rooms = {}
 
 app.use(cors({
     origin: 'http://localhost:5173',
@@ -29,14 +30,47 @@ io.on('connection', (socket) => {
 
     console.log("A user connected")
 
-    socket.on('join room', (roomId, userId) => {
+    socket.on('join room', (roomId, userId) => {    
+        
+        if(!rooms[roomId]){
+            rooms[roomId] = [];
+        }
+
+        if(rooms[roomId].length === 1){
+            socket.emit("room-full")
+        }
+
+        if(userId){
+            rooms[roomId].push(userId)
+        }
+
         console.log(`roomId: ${roomId}`)
+
         socket.join(roomId);
         socket.to(roomId).emit('user connected', userId)
 
         socket.on('disconnect', () => {
+            
+            rooms[roomId] = rooms[roomId].filter( (id) => {
+                console.log("id: ", id );
+                console.log("userId: ", userId)
+
+                return id !== userId
+            } )
+
+            console.log("room after disconnected", rooms[roomId])
+
             socket.to(roomId).emit("user-disconnected", userId)
         })
+    })
+
+    socket.on("check-length", (roomId, peerId) => {
+
+        console.log("roomsArray: ", rooms[roomId])
+        console.log("room array length: ",rooms[roomId].length);
+        
+        socket.emit("room-length", rooms[roomId].length)    
+
     })
  
 })
