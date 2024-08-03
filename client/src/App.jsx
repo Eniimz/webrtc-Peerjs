@@ -19,6 +19,7 @@ function App() {
   const [create, setCreate] = useState(false)
   const [input, setInput] = useState("");
   const [isRoomFull, setIsRoomFull] = useState(null)
+  const [joinClicked, setJoinClicked] = useState(false)
 
   const navigate = useNavigate(); 
   
@@ -71,31 +72,33 @@ function App() {
     setInput(event.target.value)
   }
 
-
-  const handleJoin = () => {
-
-    socket.current.emit("check-length", input, peerId)  
-
+  useEffect(() => {
     socket.current.on("room-length", (length) => {
 
       console.log("length passed in client: ", length)
-
+  
       if(length === 4){
         console.log("4 members in room, room full")
         setIsRoomFull(true)
       }
       else{
-
         socket.current.emit('join room', input, peerId)
-
         navigate(`/room/${input}`);
         console.log("Room not full")
-
       }
-    })
+      })
+
+      return () => {
+        socket.current.off("room-length")
+      }
+
+  }, [joinClicked])
 
 
-    
+  const handleJoin = () => {
+
+    socket.current.emit("check-length", input, peerId)  //which then emits room-length event
+    setJoinClicked((prevValue) => !prevValue)
 
   }
 
@@ -110,7 +113,8 @@ function App() {
             peerId && <h1 className="text-white">Peer Id: {peerId}</h1>
           }
 
-          {isRoomFull && 
+          {
+          isRoomFull && 
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>

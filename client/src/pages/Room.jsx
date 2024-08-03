@@ -12,21 +12,20 @@ import { HiSpeakerWave } from "react-icons/hi2";
 
 
 
-function Room() {
-
-  let [videoStreams, setVideoStreams] = useState([])
-  let [newUserData, setNewUserData] = useState(null)
-  let [streamAdded, setStreamAdded] = useState(false)
-
+function Room() {  
   
+  let disconnectedUser = useRef(null)
+
   let videoTag = useRef(null)
-  let remoteVid = useRef(null)
+  let videoContainer = useRef(null);
   let call = useRef(null);
+  let receivingCall = useRef([])
+
+  // let videoRefs = useRef({}) // this approach of retaining the refs of created videoElements works as well
 
   const socket = useSelector(state => state.socket.socket)
   const peer = useSelector(state => state.peer.peer)
-  const peerId = useSelector(state => state.peer.peerId)
-
+  
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -48,48 +47,69 @@ function Room() {
 
       peer.on('call', call => {
 
+        receivingCall.current.push(call);
+
         call.answer(stream)
 
-        call.on('stream', (localVideoStream) => {
+        const video = document.createElement('video');
 
-          console.log("The receiving call peer ran... on getting local stream")
+        video.id = call.metadata.userId;  // call.metadata.userId == id of the caller
 
-          setNewUserData({userId: call.metadata.userId , remoteVideoStreamm: localVideoStream})
+        // videoRefs.current[call.metadata.userId] = video;
 
-          console.log("INCOMMING CALL from the user: ", call.metadata.userId)
+        console.log("Peer.id:(receiver) ", call.metadata.userId)
+
+        video.classList.add("rounded-lg", "h-[400px]")
+
+        call.on('stream', (localVideoStream) => { 
+
+          video.srcObject = localVideoStream;
+          video.addEventListener("loadedmetadata", () => {
+            video.play();
+          })
+          videoContainer.current.append(video)  
+
+          setTimeout(() => {
+            const videoElement = document.getElementById(call.metadata.userId);
+            console.log("DisconnectedUseREF: ", disconnectedUser.current)
+            if (videoElement !== disconnectedUser.current){
+              console.log('video element after appending: ', videoElement);
+            }
+          }, 100);
 
         })
+      })
 
-      console.log("The one before peer.on('call').....is running yes")
+      socket.on("user-disconnected", (userId) => {
+
+        console.log("The user disconnected: ", userId)
+        
+        /*const videoElement = videoRefs.current[userId] (SECOND APPROACH FOR RETAINING REMOTE VIDEO REFS)
+        
+        console.log("video element to be deleted: ", videoElement)  
+        
+        if(videoElement){
+          videoElement.remove();  
+          delete videoRefs.current[userId]
+          }*/
+         
+        disconnectedUser.current = userId;
+
+        const videoElement = document.getElementById(userId);
+
+        console.log("The videoElement to be deleted: ", videoElement)
+
+        if(videoElement){
+          videoElement.remove()
+        }
 
       })
 
     })
 
-    
-
-
   }, [])
 
-  useEffect(() => {
-
-    if(newUserData){
-      console.log("The data inside videoStream: ", newUserData.remoteVideoStreamm.id)
-
-      setVideoStreams((prevStreams) => [
-        ...prevStreams,
-        newUserData
-      ])
-    }
-
-
-  }, [newUserData])
-
-
-  useEffect(() => {
-    console.log("The videoStream array: ", videoStreams)
-  }, [videoStreams])
-
+ 
 
   let connectToNewUser = (userId, stream) => {
 
@@ -97,12 +117,28 @@ function Room() {
       metadata: { userId: peer.id }
     })
 
+    const video = document.createElement('video');  
+    // videoRefs.current[userId] = video;  (second approach for retaining video refs) 
+    video.id = userId;                           
+    video.classList.add("rounded-lg", "h-[400px]")
+
+    /* x`x  
+      Creating a video element before call.on("stream") as on one call it is receiving two remote
+      streams, if put this statement inside two video elements are created as for two streams the callback
+      function runs twice.
+    */
+
     call.current.on('stream', remoteVideoStreamm => {
 
-      console.log("The calling peer ran on receiving remote Stream")
+        console.log("The calling peer ran on receiving remote Stream")
 
-      setNewUserData({userId, remoteVideoStreamm})
-      // setStreamAdded(prevValue => !prevValue)
+        video.srcObject = remoteVideoStreamm
+  
+        video.addEventListener("loadedmetadata", () => {
+          video.play()
+        })
+        
+        videoContainer.current.append(video);
 
 
     })
@@ -125,10 +161,30 @@ function Room() {
 
     console.log("End call clicked")
     console.log("Call obj: ", call.current)
+    console.log("receivingCall: ", receivingCall.current)
+
     if(call.current){
-      call.current.close();
+      call.current.close()
+      socket.emit("leave-room")
+      console.log("Call has ended")
+      
+    }
+
+    if(receivingCall.current){
+      
+      receivingCall.current.forEach(call => call.close())
+
+      socket.emit("leave-room") //this then disconnects the socket from the server side
       console.log("Call has ended")
     }
+ 
+    if(videoTag.current && videoTag.current.srcObject){
+
+      videoTag.current.srcObject.getTracks().forEach(track => track.stop())
+      videoTag.current.srcObject = null;
+      videoTag.current.remove()
+    }
+
     navigate("/")
 
   }
@@ -138,18 +194,13 @@ function Room() {
   return (
     <div className='flex flex-col items-center bg-slate-500 h-screen justify-center py-4' >
 
-      <div className='flex flex-col bg-black w-full h-full p-5'>
+      <div className='flex flex-col bg-green-600 w-full h-full p-5'>
         <div className=' w-full h-full flex '>
 
-          <div className='w-full flex flex-wrap gap-5 px-12 h-fit justify-center'>
+          <div className='w-full flex flex-wrap gap-5 px-12 h-fit justify-center' ref={videoContainer}>
+
             <video ref={videoTag} autoPlay muted className='local-vid rounded-lg h-[400px]' ></video>
 
-            {
-              videoStreams[0] && (videoStreams.map((videoData) => 
-                <Video stream={videoData.remoteVideoStreamm} socket = {socket} userIdProp={videoData.userId} setVideoStreams={setVideoStreams}/>
-              )
-              )
-            }
           </div>
 
         <div className='bg-red-600 w-[600px]'>

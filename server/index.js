@@ -46,8 +46,17 @@ io.on('connection', (socket) => {
 
         console.log(`roomId: ${roomId}`)
 
+        socket.emit("roomUsers", rooms[roomId])
+
         socket.join(roomId);
         socket.to(roomId).emit('user connected', userId)
+
+        socket.on("leave-room", () => {
+
+            socket.disconnect() //disconnecting socket on the server side
+            
+        })
+        
 
         socket.on('disconnect', () => {
             
@@ -56,7 +65,7 @@ io.on('connection', (socket) => {
                 console.log("userId: ", userId)
 
                 return id !== userId
-            } )
+            })
 
             console.log("room after disconnected", rooms[roomId])
 
@@ -68,7 +77,7 @@ io.on('connection', (socket) => {
 
         console.log("roomsArray: ", rooms[roomId])
         console.log("room array length: ",rooms[roomId].length);
-        
+
         socket.emit("room-length", rooms[roomId].length)    
 
     })

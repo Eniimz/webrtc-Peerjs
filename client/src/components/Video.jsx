@@ -1,38 +1,16 @@
 import React, { useEffect, useRef } from 'react'
 
-function Video({ stream, socket, userIdProp, setVideoStreams }) {
+function Video({ stream, socket, userIdProp, setVideoStreams,localVidTag }) {
 
     let videoRef = useRef(null);
 
-    useEffect(() => {
-        socket.on("user-disconnected", userId => {
-
-            // console.log("I ran on user disconnected, outside if")
-
-            
-
-            // console.log("The passed userProp: ", userIdProp)
-
-            if(userIdProp === userId){
-
-                setVideoStreams((prevStreams) => prevStreams.filter((data) => data.userId !== userId))
-
-                console.log("The user dicsonnected: ", userId);
-                // console.log("I ran on user-disconnected (inside if userid == prop)")
-
-                // videoRef.current.remove();
-                
-
-            }
-
-            
-        })
-    })
+    
 
     useEffect(() => {
         if(videoRef.current && stream){
             videoRef.current.srcObject = stream
         }
+
     }, [stream])
 
   return (
