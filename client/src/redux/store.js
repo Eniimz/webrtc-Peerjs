@@ -1,11 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 import socketReducer from "./socketSlice"
 import peerReducer from "./peerSlice"
+import userReducer from "./userSlice"
 
 const store = configureStore({
     reducer: {
         socket: socketReducer,
-        peer: peerReducer
+        peer: peerReducer,
+        user: userReducer
+
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({

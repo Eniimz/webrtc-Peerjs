@@ -8,6 +8,7 @@ import { useRef } from "react";
 import { Peer } from 'peerjs'
 import { populateSocket} from "./redux/socketSlice";
 import { populatePeer, populatePeerId } from "./redux/peerSlice";
+import { populateUsername, populateRoomId } from "./redux/userSlice";
 import { useSelector, useDispatch } from 'react-redux';
 import { Button } from "./components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "./components/ui/alert";
@@ -20,16 +21,17 @@ function App() {
   const [input, setInput] = useState("");
   const [isRoomFull, setIsRoomFull] = useState(null)
   const [joinClicked, setJoinClicked] = useState(false)
+  const [username, setUsername] = useState(null)
+  const [roomId, setRoomId] = useState(null)
 
   const navigate = useNavigate(); 
+  const dispatch = useDispatch();
+  
+  let socket = useRef(null)
+  let roomLength = useRef(null);
+  
   
   const peer = new Peer()
-  let socket = useRef(null)
-
-  let roomLength = useRef(null);
-
-  const dispatch = useDispatch();
-
 
   useEffect(() => {
 
@@ -62,6 +64,7 @@ function App() {
 
     let roomId = uuid();
 
+    setRoomId(roomId)
     socket.current.emit('join room', roomId, peerId);
 
     navigate(`/room/${roomId}`);
@@ -94,8 +97,17 @@ function App() {
 
   }, [joinClicked])
 
+  useEffect(() => {
+
+    console.log("roomId in useEffect: ", roomId)
+    dispatch(populateRoomId(roomId))
+
+  }, [roomId])
 
   const handleJoin = () => {
+
+    console.log("username entered: ", username)
+    socket.current.emit("username added", input, username, peerId)
 
     socket.current.emit("check-length", input, peerId)  //which then emits room-length event
     setJoinClicked((prevValue) => !prevValue)
@@ -105,9 +117,9 @@ function App() {
 
   return (
     <>
-      <div className='flex justify-center items-center bg-black h-screen'> 
+      <div className='flex justify-center items-center bg-[#09090b] h-screen'> 
 
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 border p-10 rounded-md bg-background">
 
           {
             peerId && <h1 className="text-white">Peer Id: {peerId}</h1>
@@ -124,11 +136,16 @@ function App() {
             </Alert>
 
           }
+
+          
+          <input type="text" placeholder="Enter your name..." className="rounded-lg text-black p-3" onChange={(e) => setUsername(e.target.value)}/>
+          
           <div className="flex gap-5">
-            <Button className="bg-red-600 hover:bg-red-500 p-7 rounded-sm font-bold" onClick={handleJoin}> Join Room </Button>
-            <input type="text" value={input} onChange={(e) => handleInput(e)}/>
+            <Button className="bg-primary hover:bg-primary/90 p-7 font-bold text-foreground rounded-lg" onClick={handleJoin}> Join Room </Button>
+            <input className="rounded-lg text-black" type="text" value={input} onChange={(e) => handleInput(e)} />
           </div>
-          <Button className="bg-blue-500 p-6 rounded-sm hover:bg-blue-400 font-bold" onClick={handleCreate}> Create Room </Button>
+
+          <Button className="bg-primary-special p-6 rounded-lg hover:bg-primary-special/90 font-bold text-foreground" onClick={handleCreate}> Create Room </Button>
         </div>
 
       </div>

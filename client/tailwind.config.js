@@ -1,3 +1,5 @@
+const plugin = require('tailwindcss');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -26,6 +28,7 @@ module.exports = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          special: "hsl(346.8 77.2% 49.8%)"
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -53,9 +56,9 @@ module.exports = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        // lg: "var(--radius)",
+        // md: "calc(var(--radius) - 2px)",
+        // sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
         "accordion-down": {

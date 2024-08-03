@@ -17,6 +17,7 @@ const io = new Server(server, {
 })
 
 const rooms = {}
+const users = {}
 
 app.use(cors({
     origin: 'http://localhost:5173',
@@ -49,7 +50,11 @@ io.on('connection', (socket) => {
         socket.emit("roomUsers", rooms[roomId])
 
         socket.join(roomId);
+
+
         socket.to(roomId).emit('user connected', userId)
+
+        socket.emit('roomId', roomId)
 
         socket.on("leave-room", () => {
 
@@ -68,10 +73,20 @@ io.on('connection', (socket) => {
             })
 
             console.log("room after disconnected", rooms[roomId])
+            
+            let foundUsername = users[userId];
 
-            socket.to(roomId).emit("user-disconnected", userId)
+            let message = foundUsername ? `${foundUsername} left the room` : `A guest left the room`
+
+                             
+            socket.to(roomId).emit("user-disconnected", userId, message)
+
         })
+
+        
     })
+
+    
 
     socket.on("check-length", (roomId, peerId) => {
 
@@ -81,6 +96,18 @@ io.on('connection', (socket) => {
         socket.emit("room-length", rooms[roomId].length)    
 
     })
+
+    socket.on("username added", (roomId, username, userId) => {
+
+        users[userId] = username
+
+        let user = username ? `${username} joined the room` : `A guest joined the room`;
+
+        socket.to(roomId).emit("user added message", user)
+
+    })
+
+    
  
 })
 

@@ -8,27 +8,41 @@ import Video from '../components/Video';
 import { Button } from '@/components/ui/button';
 import { MdCallEnd } from 'react-icons/md';
 import { FaMicrophone } from "react-icons/fa6";
-import { HiSpeakerWave } from "react-icons/hi2";
+import { FaMicrophoneSlash } from "react-icons/fa";
+import { HiSpeakerWave, HiMiniSpeakerXMark } from "react-icons/hi2";
 
 
 
 function Room() {  
+
+  const [isMute, setIsMute] = useState(false)
+  const [isMicMuted, setIsMicMuted] = useState(false)
+  const [endCallClicked, setEndCallClicked] = useState(false)
+  const [message, setMessage] = useState(null)
+  const [allMessages, setAllMessages] = useState([])
   
   let disconnectedUser = useRef(null)
-
   let videoTag = useRef(null)
   let videoContainer = useRef(null);
   let call = useRef(null);
   let receivingCall = useRef([])
+  let roomIdRef = useRef(null)
 
-  // let videoRefs = useRef({}) // this approach of retaining the refs of created videoElements works as well
+  let videoRefs = useRef({}) // this approach of retaining the refs of created videoElements works as well
 
   const socket = useSelector(state => state.socket.socket)
   const peer = useSelector(state => state.peer.peer)
+  const username = useSelector(state => state.user.name)
+  
   
   const navigate = useNavigate()
 
   useEffect(() => {
+
+    socket.on("roomId", (roomId) => {
+      roomIdRef.current = roomId
+      console.log("RECEIVED THE ROOMID: ", roomIdRef.current)
+    })
 
     navigator.mediaDevices.getUserMedia({
       video: true,
@@ -40,6 +54,9 @@ function Room() {
       socket.on('user connected', (userId) => {
 
         console.log("A new user joined the room: ", userId);
+
+        // setMessage(`A new user joined the room: ${userId}`)
+
 
         connectToNewUser(userId, stream);
 
@@ -55,7 +72,7 @@ function Room() {
 
         video.id = call.metadata.userId;  // call.metadata.userId == id of the caller
 
-        // videoRefs.current[call.metadata.userId] = video;
+        videoRefs.current[call.metadata.userId] = video;
 
         console.log("Peer.id:(receiver) ", call.metadata.userId)
 
@@ -80,9 +97,10 @@ function Room() {
         })
       })
 
-      socket.on("user-disconnected", (userId) => {
+      socket.on("user-disconnected", (userId, message) => {
 
         console.log("The user disconnected: ", userId)
+        console.log("The username disconnected: ", username)
         
         /*const videoElement = videoRefs.current[userId] (SECOND APPROACH FOR RETAINING REMOTE VIDEO REFS)
         
@@ -91,8 +109,13 @@ function Room() {
         if(videoElement){
           videoElement.remove();  
           delete videoRefs.current[userId]
-          }*/
-         
+        }*/  
+
+        setAllMessages((prevMessages => [
+          ...prevMessages,
+          message
+        ]))
+
         disconnectedUser.current = userId;
 
         const videoElement = document.getElementById(userId);
@@ -105,8 +128,18 @@ function Room() {
 
       })
 
-    })
+      
 
+      socket.on("user added message", userMessage => {
+        
+        setAllMessages((prevMessages) => [
+          ...prevMessages,
+          userMessage
+        ])
+      })
+      
+    })
+    
   }, [])
 
  
@@ -118,7 +151,7 @@ function Room() {
     })
 
     const video = document.createElement('video');  
-    // videoRefs.current[userId] = video;  (second approach for retaining video refs) 
+    videoRefs.current[userId] = video; // (second approach for retaining video refs) 
     video.id = userId;                           
     video.classList.add("rounded-lg", "h-[400px]")
 
@@ -156,12 +189,16 @@ function Room() {
     videoTag.current.srcObject = stream;
   }
 
-  
+
   let handleEndCall = () => {
 
+    setEndCallClicked(true)
     console.log("End call clicked")
     console.log("Call obj: ", call.current)
     console.log("receivingCall: ", receivingCall.current)
+    console.log("checking RoomIdRef.current: ", roomIdRef.current)
+
+    // socket.emit("user disconnected message", roomIdRef.current, peer.id)
 
     if(call.current){
       call.current.close()
@@ -189,23 +226,62 @@ function Room() {
 
   }
 
-  
+  let handleSpeaker = (mute) => {
+
+    Object.values(videoRefs.current).forEach(video => {
+      if(video && video.srcObject){
+        video.srcObject.getAudioTracks().forEach(track => {
+          track.enabled = mute
+        })
+      }
+    })
+    setIsMute(!isMute)
+
+  }
+
+  let handleMic = (mute) => {
+
+    videoTag.current.srcObject.getAudioTracks().forEach(track => {
+      track.enabled = mute
+    })
+
+    setIsMicMuted(!isMicMuted)
+
+  }
+
+  useEffect(() => {
+
+    console.log("All VideoRefs: ", videoRefs)
+
+  }, [isMute])
 
   return (
-    <div className='flex flex-col items-center bg-slate-500 h-screen justify-center py-4' >
+    <div className='flex flex-col items-center bg-[#09090b] h-screen justify-center py-4' >
 
-      <div className='flex flex-col bg-green-600 w-full h-full p-5'>
-        <div className=' w-full h-full flex '>
+      <div className='flex flex-col w-full h-full bg-slate-700 p-5 gap-3'>
 
-          <div className='w-full flex flex-wrap gap-5 px-12 h-fit justify-center' ref={videoContainer}>
+        <div className='w-full h-full flex rounded-lg gap-5'>
 
-            <video ref={videoTag} autoPlay muted className='local-vid rounded-lg h-[400px]' ></video>
+          <div className='w-full h-full flex bg-background border rounded-lg p-4'>
+
+            <div className='w-full flex flex-wrap gap-5 px-12 h-fit justify-center' ref={videoContainer}>
+
+              <video ref={videoTag} autoPlay muted className='local-vid rounded-lg h-[400px]' ></video>
+
+            </div>
 
           </div>
 
-        <div className='bg-red-600 w-[600px]'>
-          ds
-        </div>
+          <div className='w-[600px] rounded-lg bg-background border overflow-y-auto no-scrollbar '>
+              {
+                allMessages &&
+                allMessages.map((message, index) => (
+
+                  <p className='m-3 p-4 rounded-lg border bg-[#09090b]' key={index}>{message}</p>
+
+                ))
+              }
+          </div>
 
         </div>
 
@@ -213,11 +289,11 @@ function Room() {
         <div className='w-full h-14 z-30 flex justify-center items-center'>
           <div className='w-1/2 flex justify-around items-center px-44'>
 
-            <Button className="bg-slate-800 hover:border-2 hover:bg-slate-800 rounded-xl p-5"> { <HiSpeakerWave size={18} /> } </Button>
+            <Button className="bg-slate-800 hover:border-2 hover:bg-slate-800 rounded-xl p-5" onClick = {() => handleSpeaker(isMute)}> { isMute ? <HiMiniSpeakerXMark size={18} color='white'/> : <HiSpeakerWave size={18} color='white'/> } </Button>
 
-            <Button className="bg-red-500 hover:border-2 hover:border-white hover:bg-red-500 hover:transform-none rounded-xl p-5" onClick = {handleEndCall}> { <MdCallEnd size={28} /> } </Button>
+            <Button className="bg-red-500 hover:border-2 hover:border-white hover:bg-red-500 hover:transform-none rounded-xl p-5" onClick = {handleEndCall}> { <MdCallEnd size={28} color='white'/> } </Button>
 
-            <Button className="bg-slate-800 hover:border-2 hover:bg-slate-800 hover:transform-none rounded-xl p-5" > <FaMicrophone size={18} /> </Button> 
+            <Button className="bg-slate-800 hover:border-2 hover:bg-slate-800 hover:transform-none rounded-xl p-5" onClick = {() => handleMic(isMicMuted)}> {isMicMuted ? <FaMicrophoneSlash size={18} color='white'/> : <FaMicrophone size={18} color='white'/>} </Button> 
 
           </div>
         </div>
