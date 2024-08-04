@@ -20,16 +20,19 @@ function Room() {
   const [endCallClicked, setEndCallClicked] = useState(false)
   const [message, setMessage] = useState(null)
   const [allMessages, setAllMessages] = useState([])
+  const [remoteUsername,  setRemoteUsername] = useState(null)
   
-  let disconnectedUser = useRef(null)
   let videoTag = useRef(null)
   let videoContainer = useRef(null);
   let call = useRef(null);
   let receivingCall = useRef([])
   let roomIdRef = useRef(null)
+  let remoteUsernameRef = useRef(null)
+  let callerUsernameRef = useRef(null)
 
+  
   let videoRefs = useRef({}) // this approach of retaining the refs of created videoElements works as well
-
+  
   const socket = useSelector(state => state.socket.socket)
   const peer = useSelector(state => state.peer.peer)
   const username = useSelector(state => state.user.name)
@@ -43,6 +46,12 @@ function Room() {
       roomIdRef.current = roomId
       console.log("RECEIVED THE ROOMID: ", roomIdRef.current)
     })
+
+    socket.on("callerUsername", (username) => {
+      console.log("Running callerusername listner: ", username)
+      callerUsernameRef.current = username
+    }) 
+
 
     navigator.mediaDevices.getUserMedia({
       video: true,
@@ -64,19 +73,33 @@ function Room() {
 
       peer.on('call', call => {
 
+        console.log("the on call ran")
+
         receivingCall.current.push(call);
 
         call.answer(stream)
 
-        const video = document.createElement('video');
+        
 
-        video.id = call.metadata.userId;  // call.metadata.userId == id of the caller
+        const videoBox = document.createElement('div')
+        const video = document.createElement('video');  
+        const label = document.createElement('p')
+        label.innerHTML = call.metadata.username;
 
-        videoRefs.current[call.metadata.userId] = video;
+        videoBox.id = call.metadata.userId;  // call.metadata.userId == id of the caller
+
+        videoRefs.current[call.metadata.userId] = videoBox;
+
+        videoBox.classList.add("relative")
+        video.classList.add("rounded-lg", "h-[360px]")
+        label.classList.add("absolute", "bottom-3", "left-3", "text-white", "bg-gray-900", "p-1.5", "rounded-md", "opacity-80")
+
+        videoBox.append(video)
+        videoBox.append(label)
 
         console.log("Peer.id:(receiver) ", call.metadata.userId)
 
-        video.classList.add("rounded-lg", "h-[400px]")
+        video.classList.add("rounded-lg", "h-[360px]")
 
         call.on('stream', (localVideoStream) => { 
 
@@ -84,7 +107,7 @@ function Room() {
           video.addEventListener("loadedmetadata", () => {
             video.play();
           })
-          videoContainer.current.append(video)  
+          videoContainer.current.append(videoBox)  
 
           setTimeout(() => {
             const videoElement = document.getElementById(call.metadata.userId);
@@ -116,8 +139,6 @@ function Room() {
           message
         ]))
 
-        disconnectedUser.current = userId;
-
         const videoElement = document.getElementById(userId);
 
         console.log("The videoElement to be deleted: ", videoElement)
@@ -139,21 +160,44 @@ function Room() {
       })
       
     })
-    
-  }, [])
 
+  }, [])
+  
+  useEffect(() => {
+
+    socket.on("remote username", (remoteUser) => {
+      setRemoteUsername(remoteUser)
+      remoteUsernameRef.current = remoteUser
+      console.log("REMOTEUSERNAMEREF RECEIVED: ", remoteUsernameRef.current) 
+   })
+  }, [])
  
 
   let connectToNewUser = (userId, stream) => {
 
     call.current = peer.call(userId, stream, {
-      metadata: { userId: peer.id }
+      metadata: {
+         userId: peer.id,
+         username: username 
+
+      }
     })
 
+    const videoBox = document.createElement('div')
     const video = document.createElement('video');  
-    videoRefs.current[userId] = video; // (second approach for retaining video refs) 
-    video.id = userId;                           
-    video.classList.add("rounded-lg", "h-[400px]")
+    const label = document.createElement('p')
+    label.innerHTML = remoteUsernameRef.current;
+
+    console.log("The REMOTEUSERNAMEREF.CURRENT: ", remoteUsernameRef.current)
+
+    videoRefs.current[userId] = videoBox; // (second approach for retaining video refs) 
+    videoBox.id = userId;                           
+    videoBox.classList.add("relative")
+    video.classList.add("rounded-lg", "h-[360px]")
+    label.classList.add("absolute", "bottom-3", "left-3", "text-white", "bg-gray-900", "p-1.5", "rounded-md", "opacity-80")
+
+    videoBox.append(video)
+    videoBox.append(label)
 
     /* x`x  
       Creating a video element before call.on("stream") as on one call it is receiving two remote
@@ -171,7 +215,8 @@ function Room() {
           video.play()
         })
         
-        videoContainer.current.append(video);
+        videoContainer.current.append(videoBox);
+        
 
 
     })
@@ -258,15 +303,17 @@ function Room() {
   return (
     <div className='flex flex-col items-center bg-[#09090b] h-screen justify-center py-4' >
 
-      <div className='flex flex-col w-full h-full bg-slate-700 p-5 gap-3'>
+      <div className='flex flex-col w-full h-full p-5 gap-3'>
 
         <div className='w-full h-full flex rounded-lg gap-5'>
 
           <div className='w-full h-full flex bg-background border rounded-lg p-4'>
 
             <div className='w-full flex flex-wrap gap-5 px-12 h-fit justify-center' ref={videoContainer}>
-
-              <video ref={videoTag} autoPlay muted className='local-vid rounded-lg h-[400px]' ></video>
+              <div className='relative bg-red-500 rounded-3xl overflow-hidden'>
+                <video ref={videoTag} autoPlay muted className='local-vid rounded-3xl' width= "480"></video>
+                <p className='absolute bottom-3 left-3 text-white bg-gray-900 p-1.5 rounded-md opacity-80'> {username}</p>
+              </div>
 
             </div>
 
@@ -287,7 +334,7 @@ function Room() {
 
 
         <div className='w-full h-14 z-30 flex justify-center items-center'>
-          <div className='w-1/2 flex justify-around items-center px-44'>
+          <div className='w-1/2 flex justify-around items-center px-44 '>
 
             <Button className="bg-slate-800 hover:border-2 hover:bg-slate-800 rounded-xl p-5" onClick = {() => handleSpeaker(isMute)}> { isMute ? <HiMiniSpeakerXMark size={18} color='white'/> : <HiSpeakerWave size={18} color='white'/> } </Button>
 

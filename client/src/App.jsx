@@ -8,7 +8,7 @@ import { useRef } from "react";
 import { Peer } from 'peerjs'
 import { populateSocket} from "./redux/socketSlice";
 import { populatePeer, populatePeerId } from "./redux/peerSlice";
-import { populateUsername, populateRoomId } from "./redux/userSlice";
+import { populateUsername, populateRoomId, populateRemoteUsername } from "./redux/userSlice";
 import { useSelector, useDispatch } from 'react-redux';
 import { Button } from "./components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "./components/ui/alert";
@@ -29,7 +29,7 @@ function App() {
   
   let socket = useRef(null)
   let roomLength = useRef(null);
-  
+
   
   const peer = new Peer()
 
@@ -56,6 +56,7 @@ function App() {
       setpeerId(id)
       dispatch(populatePeerId(id));
     })
+    
 
   }, [])
   
@@ -64,8 +65,9 @@ function App() {
 
     let roomId = uuid();
 
+    dispatch(populateUsername(username))
     setRoomId(roomId)
-    socket.current.emit('join room', roomId, peerId);
+    socket.current.emit('join room', roomId, peerId, username);
 
     navigate(`/room/${roomId}`);
 
@@ -85,7 +87,8 @@ function App() {
         setIsRoomFull(true)
       }
       else{
-        socket.current.emit('join room', input, peerId)
+        
+        socket.current.emit('join room', input, peerId, username)
         navigate(`/room/${input}`);
         console.log("Room not full")
       }
@@ -106,9 +109,10 @@ function App() {
 
   const handleJoin = () => {
 
+    dispatch(populateUsername(username))
     console.log("username entered: ", username)
     socket.current.emit("username added", input, username, peerId)
-
+    
     socket.current.emit("check-length", input, peerId)  //which then emits room-length event
     setJoinClicked((prevValue) => !prevValue)
 

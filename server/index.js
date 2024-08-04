@@ -18,6 +18,9 @@ const io = new Server(server, {
 
 const rooms = {}
 const users = {}
+const usersInRooms = {}
+let addedUser;
+
 
 app.use(cors({
     origin: 'http://localhost:5173',
@@ -31,7 +34,7 @@ io.on('connection', (socket) => {
 
     console.log("A user connected")
 
-    socket.on('join room', (roomId, userId) => {    
+    socket.on('join room', (roomId, userId, localUser) => {    
         
         if(!rooms[roomId]){
             rooms[roomId] = [];
@@ -45,7 +48,7 @@ io.on('connection', (socket) => {
             rooms[roomId].push(userId)
         }
 
-        console.log(`roomId: ${roomId}`)
+        // console.log(`roomId: ${roomId}`)
 
         socket.emit("roomUsers", rooms[roomId])
 
@@ -55,6 +58,8 @@ io.on('connection', (socket) => {
         socket.to(roomId).emit('user connected', userId)
 
         socket.emit('roomId', roomId)
+
+
 
         socket.on("leave-room", () => {
 
@@ -66,13 +71,11 @@ io.on('connection', (socket) => {
         socket.on('disconnect', () => {
             
             rooms[roomId] = rooms[roomId].filter( (id) => {
-                console.log("id: ", id );
-                console.log("userId: ", userId)
+                // console.log("id: ", id );
+                // console.log("userId: ", userId)
 
                 return id !== userId
             })
-
-            console.log("room after disconnected", rooms[roomId])
             
             let foundUsername = users[userId];
 
@@ -90,20 +93,27 @@ io.on('connection', (socket) => {
 
     socket.on("check-length", (roomId, peerId) => {
 
-        console.log("roomsArray: ", rooms[roomId])
-        console.log("room array length: ",rooms[roomId].length);
+        // console.log("roomsArray: ", rooms[roomId])
+        // console.log("room array length: ",rooms[roomId].length);
 
         socket.emit("room-length", rooms[roomId].length)    
 
     })
 
-    socket.on("username added", (roomId, username, userId) => {
+    socket.on("username added", (roomId, username, userId) => { // when checking length is 4   < 4 ? no
 
         users[userId] = username
+        console.log("Added user: ", username)
+        console.log("rooms[roomid].length: ", rooms[roomId].length)   //join room not emitted yet where user is added to array
 
+        socket.to(roomId).emit("remote username", username)    
+        
         let user = username ? `${username} joined the room` : `A guest joined the room`;
 
-        socket.to(roomId).emit("user added message", user)
+        if(rooms[roomId].length < 4){
+            socket.to(roomId).emit("user added message", user)
+        }
+        
 
     })
 

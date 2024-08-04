@@ -4,7 +4,8 @@ const userSlice = createSlice({
     name: 'user',
     initialState: {
         name: null,
-        roomId: ""
+        roomId: "",
+        remoteUsername: ""
     },
     reducers: {
         populateUsername: (state, action) => {
@@ -12,9 +13,12 @@ const userSlice = createSlice({
         },
         populateRoomId: (state, action) => {
             state.roomId = action.payload
+        },
+        populateRemoteUsername: (state, action) => {
+            state.remoteUsername = action.payload
         }
     }
 })
 
 export default userSlice.reducer;
-export const { populateUsername, populateRoomId } = userSlice.actions
+export const { populateUsername, populateRoomId, populateRemoteUsername } = userSlice.actions
