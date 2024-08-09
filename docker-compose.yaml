@@ -1,0 +1,20 @@
+services:
+  client: 
+    image: frontend
+    stdin_open: true
+    ports:
+      - "5173:5173"
+    networks:
+      - network1
+
+  server:     
+    image: backend
+    ports:
+      - "3000:3000"
+    networks:
+      - network1
+
+networks:
+  network1:
+    driver: bridge
+      
