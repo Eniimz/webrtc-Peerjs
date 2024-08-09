@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Room from "./pages/Room";
 import { useRef } from "react";
 import { Peer } from 'peerjs'
-import { populateSocket} from "./redux/socketSlice";
+import socketSlice, { populateSocket} from "./redux/socketSlice";
 import { populatePeer, populatePeerId } from "./redux/peerSlice";
 import { populateUsername, populateRoomId, populateRemoteUsername } from "./redux/userSlice";
 import { useSelector, useDispatch } from 'react-redux';
@@ -19,10 +19,13 @@ function App() {
   const [peerId, setpeerId] = useState(null);
   const [create, setCreate] = useState(false)
   const [input, setInput] = useState("");
-  const [isRoomFull, setIsRoomFull] = useState(null)
   const [joinClicked, setJoinClicked] = useState(false)
   const [username, setUsername] = useState(null)
   const [roomId, setRoomId] = useState(null)
+  
+  const [isRoomFull, setIsRoomFull] = useState(null)
+  const [isRoomInputEmpty, setIsRoomInputEmpty] = useState(null)
+  const [roomExists, setRoomExists] = useState(true)
 
   const navigate = useNavigate(); 
   const dispatch = useDispatch();
@@ -78,17 +81,24 @@ function App() {
   }
 
   useEffect(() => {
+
+    socket.current.on("room doesnt exist", () => {
+      setRoomExists(false)
+    })
+
     socket.current.on("room-length", (length) => {
 
       console.log("length passed in client: ", length)
   
       if(length === 4){
         console.log("4 members in room, room full")
+        setRoomExists(true)
         setIsRoomFull(true)
       }
       else{
         
         socket.current.emit('join room', input, peerId, username)
+        setRoomExists(true)
         navigate(`/room/${input}`);
         console.log("Room not full")
       }
@@ -108,6 +118,11 @@ function App() {
   }, [roomId])
 
   const handleJoin = () => {
+
+    if(input === '' || input === null){
+      setIsRoomInputEmpty(true)
+      return
+    }
 
     dispatch(populateUsername(username))
     console.log("username entered: ", username)
@@ -134,11 +149,34 @@ function App() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
+              <AlertDescription className="font-bold">
                 The room is already full!
               </AlertDescription>
             </Alert>
 
+          }
+
+          {
+           isRoomInputEmpty && 
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription className="font-bold">
+                No roomId given
+              </AlertDescription>
+            </Alert>
+
+          }
+
+          {
+            !roomExists &&
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription className="font-bold">
+                  Room doesn't exist
+                </AlertDescription>
+              </Alert>
           }
 
           

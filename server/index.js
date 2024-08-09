@@ -40,10 +40,6 @@ io.on('connection', (socket) => {
             rooms[roomId] = [];
         }
 
-        if(rooms[roomId].length === 1){
-            socket.emit("room-full")
-        }
-
         if(userId){
             rooms[roomId].push(userId)
         }
@@ -96,7 +92,12 @@ io.on('connection', (socket) => {
         // console.log("roomsArray: ", rooms[roomId])
         // console.log("room array length: ",rooms[roomId].length);
 
-        socket.emit("room-length", rooms[roomId].length)    
+        if(rooms[roomId]){
+            socket.emit("room-length", rooms[roomId].length)    
+        }
+        else{
+            socket.emit("room doesnt exist")
+        }
 
     })
 
@@ -104,13 +105,13 @@ io.on('connection', (socket) => {
 
         users[userId] = username
         console.log("Added user: ", username)
-        console.log("rooms[roomid].length: ", rooms[roomId].length)   //join room not emitted yet where user is added to array
+        // console.log("rooms[roomid].length: ", rooms[roomId]?.length)   //join room not emitted yet where user is added to array
 
         socket.to(roomId).emit("remote username", username)    
         
         let user = username ? `${username} joined the room` : `A guest joined the room`;
 
-        if(rooms[roomId].length < 4){
+        if(rooms[roomId] && rooms[roomId].length < 4){
             socket.to(roomId).emit("user added message", user)
         }
         
